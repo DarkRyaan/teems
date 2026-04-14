@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AI Chat</title>
+
+<!-- ✅ TITLE RESTORED -->
+<title>Teams and Channels | General | Microsoft Teams</title>
+
+<!-- ✅ FAVICON RESTORED -->
+<link rel="icon" href="https://th.bing.com/th?q=Team%27s+Logo+White+Background&w=120&h=120&c=1&rs=1&qlt=70&o=7&dpr=2">
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -106,7 +111,7 @@ button {
 <!-- CHAT -->
 <div id="chat" style="display:none;">
   <div id="header">
-    <span>AI Chat </span>
+    <span>AI Chat 💬</span>
     <button onclick="clearChat()">Clear</button>
   </div>
 
@@ -121,15 +126,20 @@ button {
 <script>
 const workerUrl = "https://backend.ryaana059.workers.dev/";
 
-// ✅ FIXED: proper persistence load
+// ✅ SAFE CHAT HISTORY LOAD
 let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+
+// ---------------- LOGIN ----------------
 
 function setCookie() {
   const val = document.getElementById("password").value;
 
-  if (val === "SurfShark") {
+  if (val === "NordVPN") {
     document.cookie = "chat_access=1";
     checkAccess();
+  } else {
+    // ❌ wrong password → redirect to Teams
+    window.location.href = "https://teams.cloud.microsoft";
   }
 }
 
@@ -141,16 +151,18 @@ function checkAccess() {
   }
 }
 
-// ✅ FIXED: proper restore from localStorage
+// ---------------- HISTORY ----------------
+
 function loadHistory() {
   const saved = localStorage.getItem("chatHistory");
-
   if (!saved) return;
 
   chatHistory = JSON.parse(saved);
 
   chatHistory.forEach(m => {
-    addMessage(m.role === "user" ? "user" : "ai", m.content);
+    if (m && m.role && m.content) {
+      addMessage(m.role === "user" ? "user" : "ai", m.content);
+    }
   });
 }
 
@@ -169,23 +181,41 @@ function clearChat() {
   document.getElementById("messages").innerHTML = "";
 }
 
+// ---------------- CHAT ----------------
+
 async function sendMessage() {
   const input = document.getElementById("userInput");
   const text = input.value.trim();
-
-  // 🔁 Teams redirect
-  if (text.toLowerCase() === "te") {
-    window.location.href = "https://teams.cloud.microsoft";
-    return;
-  }
 
   if (!text) return;
 
   input.value = "";
 
+  // 🔁 Teams shortcut
+  if (text.toLowerCase() === "te") {
+    window.location.href = "https://teams.cloud.microsoft";
+    return;
+  }
+
+  // 🧠 admin command
+  if (text.toLowerCase() === "admin") {
+    addMessage("ai", "🧠 System Online<br>AI: Ready<br>Status: Stable");
+    return;
+  }
+
+  // ⚠️ shutdown command
+  if (text.toLowerCase() === "shutdown-admin") {
+    localStorage.clear();
+    chatHistory = [];
+    document.cookie = "chat_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    addMessage("ai", "⚠️ System shutdown");
+    setTimeout(() => location.reload(), 1000);
+    return;
+  }
+
   addMessage("user", text);
 
-  // ✅ FIXED format
+  // ✅ FIXED FORMAT (IMPORTANT)
   chatHistory.push({ role: "user", content: text });
   localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
 
@@ -198,9 +228,7 @@ async function sendMessage() {
     const res = await fetch(workerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: chatHistory
-      })
+      body: JSON.stringify({ messages: chatHistory })
     });
 
     const data = await res.json();
@@ -219,9 +247,11 @@ async function sendMessage() {
 
   } catch (err) {
     typing.remove();
-    addMessage("ai", "⚠️ Error connecting to AI");
+    addMessage("ai", "⚠️ Connection error");
   }
 }
+
+// ---------------- EVENTS ----------------
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("userInput").addEventListener("keydown", e => {
