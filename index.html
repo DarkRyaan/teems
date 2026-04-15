@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
+/* (UNCHANGED CSS — same as yours) */
 body {
   background: #0f172a;
   font-family: Arial;
@@ -20,7 +21,6 @@ body {
   align-items: center;
 }
 
-/* LOGIN */
 #login {
   display: flex;
   flex-direction: column;
@@ -37,7 +37,6 @@ body {
   border: none;
 }
 
-/* CHAT FULL SCREEN */
 #chat {
   width: 100vw;
   height: 100vh;
@@ -47,7 +46,6 @@ body {
   overflow: hidden;
 }
 
-/* HEADER */
 #header {
   background: #020617;
   padding: 10px;
@@ -56,7 +54,6 @@ body {
   flex-shrink: 0;
 }
 
-/* MESSAGES */
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -78,17 +75,9 @@ body {
 .message p { margin: 4px 0; }
 .message br { display: block; margin: 2px 0; }
 
-.user {
-  background: #3b82f6;
-  align-self: flex-end;
-}
+.user { background: #3b82f6; align-self: flex-end; }
+.ai { background: #334155; align-self: flex-start; }
 
-.ai {
-  background: #334155;
-  align-self: flex-start;
-}
-
-/* INPUT */
 #inputArea {
   display: flex;
   padding: 10px;
@@ -118,18 +107,19 @@ button {
 
 <body>
 
-<!-- LOGIN -->
 <div id="login">
   <h2>Enter Access</h2>
   <input type="password" id="password" placeholder="Password">
   <button onclick="setCookie()">Enter</button>
 </div>
 
-<!-- CHAT -->
 <div id="chat" style="display:none;">
   <div id="header">
     <span>AI Chat 💬</span>
-    <button onclick="clearChat()">Clear</button>
+    <div>
+      <button onclick="openAdmin()">Admin</button>
+      <button onclick="clearChat()">Clear</button>
+    </div>
   </div>
 
   <div id="messages"></div>
@@ -143,6 +133,9 @@ button {
 <script>
 const workerUrl = "https://backend.ryaana059.workers.dev/";
 let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+
+// LIMIT to prevent lag
+const MAX_MESSAGES = 50;
 
 function cleanText(text) {
   return text
@@ -177,24 +170,38 @@ function loadHistory() {
   if (!saved) return;
 
   chatHistory = JSON.parse(saved);
-  chatHistory.forEach(m => {
+
+  // load only recent messages (performance fix)
+  for (let i = Math.max(0, chatHistory.length - MAX_MESSAGES); i < chatHistory.length; i++) {
+    const m = chatHistory[i];
     addMessage(m.role === "user" ? "user" : "ai", m.content);
-  });
+  }
 }
 
 function addMessage(type, text) {
   const div = document.createElement("div");
   div.className = "message " + type;
   div.innerHTML = marked.parse(cleanText(text));
-  document.getElementById("messages").appendChild(div);
-  document.getElementById("messages").scrollTop =
-    document.getElementById("messages").scrollHeight;
+
+  const messages = document.getElementById("messages");
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+
+  // prevent DOM overload
+  if (messages.children.length > 60) {
+    messages.removeChild(messages.firstChild);
+  }
 }
 
 function clearChat() {
   localStorage.removeItem("chatHistory");
   chatHistory = [];
   document.getElementById("messages").innerHTML = "";
+}
+
+/* OPEN ADMIN PANEL */
+function openAdmin() {
+  window.open("admin.html", "_blank");
 }
 
 /* CHAT */
@@ -211,22 +218,18 @@ async function sendMessage() {
   }
 
   if (text.toLowerCase() === "admin") {
-    addMessage("ai", "🧠 System Online<br>AI Ready");
-    return;
-  }
-
-  if (text.toLowerCase() === "shutdown-admin") {
-    localStorage.clear();
-    chatHistory = [];
-    document.cookie = "chat_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    addMessage("ai", "⚠️ System shutdown");
-    setTimeout(() => location.reload(), 1000);
+    openAdmin();
     return;
   }
 
   addMessage("user", text);
 
   chatHistory.push({ role: "user", content: text });
+
+  if (chatHistory.length > MAX_MESSAGES) {
+    chatHistory.shift();
+  }
+
   localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
 
   const typing = document.createElement("div");
@@ -238,7 +241,11 @@ async function sendMessage() {
     const res = await fetch(workerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: chatHistory })
+
+      // 🔥 ONLY SEND LAST MESSAGE (BIG FIX)
+      body: JSON.stringify({
+        messages: [{ role: "user", content: text }]
+      })
     });
 
     const data = await res.json();
@@ -252,6 +259,11 @@ async function sendMessage() {
     addMessage("ai", reply);
 
     chatHistory.push({ role: "assistant", content: reply });
+
+    if (chatHistory.length > MAX_MESSAGES) {
+      chatHistory.shift();
+    }
+
     localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
 
   } catch (err) {
