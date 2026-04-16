@@ -99,7 +99,7 @@ button {
   cursor: pointer;
 }
 
-/* 🔥 LOGIN ANIMATION */
+/* LOGIN ANIMATION */
 #login, #chat {
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
@@ -144,8 +144,9 @@ button {
 <script>
 const API = "https://backend.ryaana059.workers.dev/";
 
-let lastClearCheck = 0;
-let lastBroadcastId = null;
+/* ---------------- STATE (FIXED PERSISTENCE) ---------------- */
+let lastClearCheck = localStorage.getItem("lastClear") || 0;
+let lastBroadcastId = localStorage.getItem("lastBroadcastId") || null;
 let sessionVersion = 0;
 
 /* ---------------- LOGIN ---------------- */
@@ -249,7 +250,7 @@ async function sendMessage() {
   }
 }
 
-/* ---------------- ANNOUNCEMENTS ---------------- */
+/* ---------------- ANNOUNCEMENTS (FIXED) ---------------- */
 function showAnnouncement(text) {
   const popup = document.createElement("div");
 
@@ -285,17 +286,24 @@ async function checkStatus() {
     const res = await fetch(API + "status");
     const data = await res.json();
 
+    if (!data) return;
+
+    /* CLEAR SYNC */
     if (data.lastCleared && data.lastCleared !== lastClearCheck) {
       lastClearCheck = data.lastCleared;
+      localStorage.setItem("lastClear", lastClearCheck);
       clearLocal();
       addMessage("ai", "⚠️ Chat cleared by admin");
     }
 
-    if (data.broadcast && data.broadcast.id !== lastBroadcastId) {
+    /* BROADCAST SYNC (FIXED NO REPLAY BUG) */
+    if (data.broadcast?.id && data.broadcast.id !== lastBroadcastId) {
       lastBroadcastId = data.broadcast.id;
+      localStorage.setItem("lastBroadcastId", lastBroadcastId);
       showAnnouncement(data.broadcast.text);
     }
 
+    /* PASSWORD CHANGE KILL SWITCH */
     if (sessionVersion && data.sessionVersion !== sessionVersion) {
       alert("Password changed — reloading");
       location.reload();
