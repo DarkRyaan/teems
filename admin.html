@@ -1,68 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Admin Panel</title>
+<title>Admin</title>
 
 <style>
 body {
-  margin: 0;
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  margin:0;
+  font-family:Arial;
+  background:#0f172a;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
 }
 
 .panel {
-  width: 360px;
-  background: #1e293b;
-  padding: 20px;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  width:400px;
+  background:#1e293b;
+  padding:20px;
+  border-radius:12px;
 }
 
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-input, textarea {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  border: none;
-  outline: none;
-}
-
-button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 6px;
-  border: none;
-  border-radius: 8px;
-  background: #22c55e;
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-button.danger {
-  background: #ef4444;
-}
-
-button.blue {
-  background: #3b82f6;
-}
-
-.status {
-  margin-top: 10px;
-  font-size: 13px;
-  text-align: center;
-  opacity: 0.8;
+input,textarea,button {
+  width:100%;
+  margin:5px 0;
+  padding:10px;
+  border:none;
+  border-radius:8px;
 }
 </style>
 </head>
@@ -70,79 +35,92 @@ button.blue {
 <body>
 
 <div class="panel">
-  <h2>🧠 SITE ADMIN PANEL</h2>
 
-  <textarea id="broadcast" placeholder="Send announcement..."></textarea>
-  <button class="blue" onclick="sendBroadcast()">📢 Send Announcement</button>
+<div id="login">
+  <input id="pass" type="password">
+  <button onclick="login()">Login</button>
+</div>
 
-  <button class="danger" onclick="clearChat()">🧹 Clear Chat</button>
+<div id="dash" style="display:none;">
 
-  <input id="newPassword" type="text" placeholder="New password">
-  <button onclick="changePassword()">🔐 Change Password</button>
+<textarea id="msg" placeholder="Announcement"></textarea>
+<button onclick="broadcast()">Broadcast</button>
 
-  <div class="status" id="status">Ready</div>
+<button onclick="clearChat()">Clear Chat</button>
+
+<input id="newpass" placeholder="User Password">
+<button onclick="setPass()">Set User Pass</button>
+
+<input id="newadmin" placeholder="Admin Password">
+<button onclick="setAdmin()">Set Admin Pass</button>
+
+<h3>Logs</h3>
+<button onclick="loadLogs()">Load Logs</button>
+<div id="logs"></div>
+
+</div>
+
 </div>
 
 <script>
 const API = "https://backend.ryaana059.workers.dev/";
 
-/* ---------------- ANNOUNCEMENT ---------------- */
-async function sendBroadcast() {
-  const text = document.getElementById("broadcast").value.trim();
-  if (!text) return setStatus("Enter message");
-
-  await fetch(API, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      type: "broadcast",
-      text
-    })
-  });
-
-  document.getElementById("broadcast").value = "";
-  setStatus("Announcement sent ✔");
-}
-
-/* ---------------- CLEAR CHAT ---------------- */
-async function clearChat() {
-  await fetch(API, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      type: "clear"
-    })
-  });
-
-  setStatus("Chat cleared ✔");
-}
-
-/* ---------------- CHANGE PASSWORD ---------------- */
-async function changePassword() {
-  const pass = document.getElementById("newPassword").value.trim();
-  if (!pass) return setStatus("Enter password");
-
-  const res = await fetch(API, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      type: "setPassword",
-      password: pass
-    })
+/* LOGIN */
+async function login(){
+  const res = await fetch(API+"adminLogin",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({password:pass.value})
   });
 
   const data = await res.json();
 
-  if (data.ok) {
-    setStatus("Password updated ✔ (users will be logged out)");
-  } else {
-    setStatus("Error changing password");
+  if(data.success){
+    login.style.display="none";
+    dash.style.display="block";
   }
 }
 
-/* ---------------- STATUS ---------------- */
-function setStatus(msg) {
-  document.getElementById("status").innerText = msg;
+/* BROADCAST */
+async function broadcast(){
+  await fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({type:"broadcast",text:msg.value})
+  });
+}
+
+/* CLEAR */
+async function clearChat(){
+  await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({type:"clear"})
+  });
+}
+
+/* PASSWORDS */
+async function setPass(){
+  await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({type:"setPassword",password:newpass.value})
+  });
+}
+
+async function setAdmin(){
+  await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({type:"setAdminPassword",password:newadmin.value})
+  });
+}
+
+/* LOGS */
+async function loadLogs(){
+  const res = await fetch(API+"logs");
+  const data = await res.json();
+
+  logs.innerHTML = data.logs.map(l =>
+    `[${new Date(l.time).toLocaleTimeString()}] ${l.role}: ${l.content}`
+  ).join("<br>");
 }
 </script>
 
