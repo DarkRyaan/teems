@@ -7,43 +7,39 @@
 body {
   margin:0;
   font-family:Arial;
-  background: linear-gradient(135deg,#0f172a,#020617);
+  background:#0f172a;
   color:white;
-  height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
+  height:100vh;
 }
 
-/* PANEL */
 .panel {
   width:420px;
   background:#111827;
   padding:20px;
   border-radius:16px;
-  box-shadow:0 20px 50px rgba(0,0,0,0.6);
 }
 
-/* INPUTS */
 input,textarea,button {
   width:100%;
-  padding:10px;
   margin:6px 0;
+  padding:10px;
   border:none;
   border-radius:10px;
 }
 
-/* BUTTON */
 button {
   background:#22c55e;
   color:white;
   cursor:pointer;
 }
 
-/* DANGER */
-.danger { background:#ef4444; }
+.danger {
+  background:#ef4444;
+}
 
-/* LOGS */
 .logs {
   background:#0b1220;
   padding:10px;
@@ -59,15 +55,14 @@ button {
 
 <div class="panel">
 
-<!-- LOGIN -->
 <div id="loginBox">
   <h2>Admin Login</h2>
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
 </div>
 
-<!-- DASH -->
 <div id="dash" style="display:none;">
+
   <h2>Control Panel</h2>
 
   <textarea id="msg" placeholder="Announcement"></textarea>
@@ -84,6 +79,7 @@ button {
   <h3>Logs</h3>
   <button onclick="loadLogs()">Refresh Logs</button>
   <div class="logs" id="logs"></div>
+
 </div>
 
 </div>
@@ -146,7 +142,7 @@ async function setAdmin(){
   });
 }
 
-/* LOGS (FIXED) */
+/* LOGS FIXED */
 async function loadLogs(){
   const res = await fetch(API+"logs");
   const data = await res.json();
