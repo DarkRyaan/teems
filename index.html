@@ -223,7 +223,17 @@ async function sendMessage() {
     addMessage("ai", "⚠️ Error");
   }
 }
+// ⌨️ SEND ON ENTER
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("userInput");
 
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // stops newline
+      sendMessage();       // sends message
+    }
+  });
+});
 /* ---------------- SITE ADMIN POPUP ---------------- */
 function showAnnouncement(text) {
   const popup = document.createElement("div");
