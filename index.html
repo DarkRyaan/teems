@@ -1,108 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Teams and Channels | General | Microsoft Teams</title>
-
-<link rel="icon" href="https://th.bing.com/th?q=Team%27s+Logo+White+Background&w=120&h=120&c=1&rs=1&qlt=70&o=7&dpr=2">
-
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-<style>
-body {
-  background: #0f172a;
-  font-family: Arial;
-  color: white;
-  margin: 0;
-  height: 100vh;
-}
-
-#login {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-#chat {
-  width: 100vw;
-  height: 100vh;
-  display: none;
-  flex-direction: column;
-  background: #1e293b;
-}
-
-#header {
-  background: #020617;
-  padding: 10px;
-}
-
-#messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: #020617;
-}
-
-.message {
-  padding: 10px;
-  border-radius: 12px;
-  max-width: 75%;
-}
-
-.user { background: #3b82f6; align-self: flex-end; }
-.ai { background: #334155; align-self: flex-start; }
-
-#inputArea {
-  display: flex;
-  padding: 10px;
-}
-
-textarea {
-  flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-}
-
-button {
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: #22c55e;
-  color: white;
-}
-</style>
-</head>
-
-<body>
-
-<div id="login">
-  <h2>Enter Access</h2>
-  <input type="password" id="password">
-  <button onclick="login()">Enter</button>
-</div>
-
-<div id="chat">
-  <div id="header">AI Chat 💬</div>
-  <div id="messages"></div>
-
-  <div id="inputArea">
-    <textarea id="userInput" placeholder="Type here"></textarea>
-    <button onclick="sendMessage()">Send</button>
-  </div>
-</div>
-
-<!-- ONLY SCRIPT PART -->
 <script>
 const API = "https://backend.ryaana059.workers.dev";
 
-let lastClear = localStorage.getItem("lastClear") || 0;
-let lastBroadcastId = null;
+/* 🔥 FIXED MEMORY STORAGE */
+let lastClear = localStorage.getItem("lastClear") || "0";
+let lastBroadcastId = localStorage.getItem("lastBroadcastId") || null;
 
 /* ENTER TO SEND */
 document.addEventListener("DOMContentLoaded", () => {
@@ -168,7 +69,7 @@ async function sendMessage() {
   }</div>`;
 }
 
-/* POPUP */
+/* ANNOUNCEMENT POPUP */
 function showAnnouncement(text) {
   const popup = document.createElement("div");
 
@@ -195,26 +96,31 @@ function showAnnouncement(text) {
   setTimeout(() => popup.remove(), 5000);
 }
 
-/* STATUS */
+/* STATUS SYNC (FIXED MEMORY BUG) */
 async function checkStatus() {
   try {
     const res = await fetch(API + "/status");
     const data = await res.json();
 
-    if (data.lastCleared && data.lastCleared !== lastClear) {
-      lastClear = data.lastCleared;
+    /* CLEAR FIX */
+    if (data.lastCleared && String(data.lastCleared) !== lastClear) {
+      lastClear = String(data.lastCleared);
       localStorage.setItem("lastClear", lastClear);
       document.getElementById("messages").innerHTML = "";
     }
 
-    if (data.broadcast?.id && data.broadcast.id !== lastBroadcastId) {
-      lastBroadcastId = data.broadcast.id;
-      showAnnouncement(data.broadcast.text);
+    /* BROADCAST FIX (NO REFRESH LOOP BUG) */
+    if (data.broadcast?.id) {
+      const id = String(data.broadcast.id);
+
+      if (id !== lastBroadcastId) {
+        lastBroadcastId = id;
+        localStorage.setItem("lastBroadcastId", id);
+
+        showAnnouncement(data.broadcast.text);
+      }
     }
 
   } catch {}
 }
-/* rah */
 </script>
-</body>
-</html>
