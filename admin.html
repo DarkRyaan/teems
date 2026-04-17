@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Admin Dashboard</title>
+<title>Admin Panel</title>
 
 <style>
 body {
@@ -9,254 +9,126 @@ body {
   font-family:Arial;
   background:#0f172a;
   color:white;
-}
-
-/* CENTER LOGIN */
-#loginWrap {
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
 }
 
-.card {
+.panel {
+  width:500px;
   background:#1e293b;
-  padding:25px;
-  border-radius:14px;
-  width:320px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.5);
-}
-
-input, textarea {
-  width:100%;
-  margin:6px 0;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-}
-
-button {
-  width:100%;
-  padding:10px;
-  margin-top:8px;
-  border:none;
-  border-radius:8px;
-  background:#22c55e;
-  color:white;
-  cursor:pointer;
-}
-
-button:hover {
-  opacity:0.9;
-}
-
-/* DASHBOARD */
-#dashboard {
-  display:none;
-  height:100vh;
-  display:flex;
-}
-
-/* SIDEBAR */
-#sidebar {
-  width:220px;
-  background:#020617;
-  padding:15px;
-}
-
-.tab {
-  padding:10px;
-  margin-bottom:6px;
-  background:#1e293b;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-.tab:hover {
-  background:#334155;
-}
-
-/* MAIN */
-#main {
-  flex:1;
   padding:20px;
+  border-radius:12px;
 }
 
-/* LOGS */
-#logsBox {
+input,textarea,button {
+  width:100%;
+  margin:5px 0;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+}
+
+button { background:#22c55e; color:white; cursor:pointer; }
+
+#logs {
   background:#020617;
   padding:10px;
-  border-radius:10px;
-  height:300px;
+  border-radius:12px;
+  height:250px;
   overflow-y:auto;
-  font-size:13px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
 
-/* TITLE */
-h2 {
-  margin-top:0;
+.log {
+  padding:10px;
+  border-radius:12px;
 }
+
+.log.user { background:#3b82f6; }
+.log.admin { background:#22c55e; color:black; }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="loginWrap">
-  <div class="card">
-    <h2>Admin Login</h2>
-    <input id="pass" type="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-  </div>
+<div class="panel">
+
+<div id="login">
+  <input id="pass" type="password" placeholder="Admin Password">
+  <button onclick="login()">Login</button>
 </div>
 
-<!-- DASHBOARD -->
-<div id="dashboard">
+<div id="dash" style="display:none;">
 
-  <!-- SIDEBAR -->
-  <div id="sidebar">
-    <div class="tab" onclick="showTab('announce')">📢 Announce</div>
-    <div class="tab" onclick="showTab('control')">⚙️ Control</div>
-    <div class="tab" onclick="showTab('logs')">📊 Logs</div>
-  </div>
+<textarea id="msg" placeholder="Announcement"></textarea>
+<button onclick="broadcast()">Broadcast</button>
 
-  <!-- MAIN -->
-  <div id="main">
+<button onclick="clearChat()">Clear Chat</button>
 
-    <!-- ANNOUNCE -->
-    <div id="announceTab">
-      <h2>Broadcast Message</h2>
-      <textarea id="msg" placeholder="Type announcement..."></textarea>
-      <button onclick="broadcast()">Send Announcement</button>
-    </div>
+<h3>Logs</h3>
+<div id="logs"></div>
 
-    <!-- CONTROL -->
-    <div id="controlTab" style="display:none;">
-      <h2>Controls</h2>
-
-      <button onclick="clearChat()">🧹 Clear Chat</button>
-
-      <h3>Change User Password</h3>
-      <input id="newpass" placeholder="New user password">
-      <button onclick="setPass()">Update</button>
-
-      <h3>Change Admin Password</h3>
-      <input id="newadmin" placeholder="New admin password">
-      <button onclick="setAdmin()">Update</button>
-    </div>
-
-    <!-- LOGS -->
-    <div id="logsTab" style="display:none;">
-      <h2>Live Logs</h2>
-      <div id="logsBox"></div>
-    </div>
-
-  </div>
 </div>
+
+</div>
+
 <script>
-const API = "https://backend.ryaana059.workers.dev";
+const API="https://backend.ryaana059.workers.dev";
 
 /* LOGIN */
-async function login() {
-  const res = await fetch(API + "/adminLogin", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ password: pass.value })
+async function login(){
+  const res=await fetch(API+"/adminLogin",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({password:pass.value})
   });
 
-  const data = await res.json();
+  const data=await res.json();
 
-  if (data.success) {
-    loginWrap.style.display = "none";
-    dashboard.style.display = "flex";
-    showTab("announce");
-    startLogs();
+  if(data.success){
+    login.style.display="none";
+    dash.style.display="block";
+    loadLogs();
+    setInterval(loadLogs,3000);
   } else {
     alert("Wrong password");
   }
 }
 
-/* SIDEBAR */
-function showTab(tab) {
-  document.getElementById("announceTab").style.display = "none";
-  document.getElementById("controlTab").style.display = "none";
-  document.getElementById("logsTab").style.display = "none";
-
-  document.getElementById(tab + "Tab").style.display = "block";
-}
-
-/* ENTER FIX */
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("input, textarea").forEach(el => {
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-
-        if (el.id === "msg") broadcast();
-        if (el.id === "pass") login();
-        if (el.id === "newpass") setPass();
-        if (el.id === "newadmin") setAdmin();
-      }
-    });
-  });
-});
-
 /* BROADCAST */
-async function broadcast() {
-  await fetch(API, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ type:"broadcast", text: msg.value })
+async function broadcast(){
+  await fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({type:"broadcast",text:msg.value})
   });
 
-  msg.value = "";
+  msg.value="";
 }
 
 /* CLEAR */
-async function clearChat() {
-  await fetch(API, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ type:"clear" })
-  });
-
-  alert("Chat cleared");
-}
-
-/* PASSWORDS */
-async function setPass() {
-  await fetch(API, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ type:"setPassword", password:newpass.value })
-  });
-}
-
-async function setAdmin() {
-  await fetch(API, {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ type:"setAdminPassword", password:newadmin.value })
+async function clearChat(){
+  await fetch(API,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({type:"clear"})
   });
 }
 
 /* LOGS */
-async function loadLogs() {
-  const res = await fetch(API + "/logs");
-  const data = await res.json();
+async function loadLogs(){
+  const res=await fetch(API+"/logs");
+  const data=await res.json();
 
-  logsBox.innerHTML = (data.logs || []).slice().reverse().map(l =>
-    `<div>[${new Date(l.time).toLocaleTimeString()}] <b>${l.role}</b>: ${l.content}</div>`
+  logs.innerHTML=(data.logs||[]).slice().reverse().map(l=>
+    `<div class="log ${l.role}">${l.role.toUpperCase()}: ${l.content}</div>`
   ).join("");
 }
-
-function startLogs() {
-  loadLogs();
-  setInterval(loadLogs, 2000);
-}
-/*rah*/
 </script>
-
 
 </body>
 </html>
