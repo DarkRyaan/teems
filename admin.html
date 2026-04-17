@@ -154,9 +154,9 @@ h2 {
   </div>
 </div>
 <script>
-  const API = "https://backend.ryaana059.workers.dev";
+const API = "https://backend.ryaana059.workers.dev";
 
-/* ---------------- LOGIN ---------------- */
+/* LOGIN */
 async function login() {
   const res = await fetch(API + "/adminLogin", {
     method: "POST",
@@ -169,23 +169,13 @@ async function login() {
   if (data.success) {
     loginWrap.style.display = "none";
     dashboard.style.display = "flex";
-    showTab("announce");
     startLogs();
   } else {
     alert("Wrong password");
   }
 }
 
-/* ---------------- TABS FIX ---------------- */
-function showTab(tab) {
-  document.getElementById("announceTab").style.display = "none";
-  document.getElementById("controlTab").style.display = "none";
-  document.getElementById("logsTab").style.display = "none";
-
-  document.getElementById(tab + "Tab").style.display = "block";
-}
-
-/* ---------------- BROADCAST (POPUP STYLE) ---------------- */
+/* BROADCAST */
 async function broadcast() {
   await fetch(API, {
     method: "POST",
@@ -193,40 +183,10 @@ async function broadcast() {
     body: JSON.stringify({ type:"broadcast", text: msg.value })
   });
 
-  showPopup(msg.value);
   msg.value = "";
 }
 
-/* 🔥 POPUP (RESTORED STYLE) */
-function showPopup(text) {
-  const popup = document.createElement("div");
-
-  popup.innerHTML = `
-    <div style="
-      position:fixed;
-      top:20px;
-      left:50%;
-      transform:translateX(-50%);
-      background:#0b1220;
-      border:2px solid #22c55e;
-      color:white;
-      padding:16px 22px;
-      border-radius:14px;
-      box-shadow:0 10px 30px rgba(0,0,0,0.6);
-      z-index:9999;
-      text-align:center;
-      min-width:250px;
-    ">
-      <div style="font-weight:bold; margin-bottom:5px;">SITE ADMIN</div>
-      <div>${text}</div>
-    </div>
-  `;
-
-  document.body.appendChild(popup);
-  setTimeout(() => popup.remove(), 5000);
-}
-
-/* ---------------- CLEAR CHAT (FIXED BUTTON) ---------------- */
+/* CLEAR CHAT */
 async function clearChat() {
   await fetch(API, {
     method: "POST",
@@ -237,15 +197,13 @@ async function clearChat() {
   alert("Chat cleared");
 }
 
-/* ---------------- PASSWORDS ---------------- */
+/* PASSWORDS */
 async function setPass() {
   await fetch(API, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({ type:"setPassword", password:newpass.value })
   });
-
-  alert("User password updated");
 }
 
 async function setAdmin() {
@@ -254,11 +212,9 @@ async function setAdmin() {
     headers: {"Content-Type":"application/json"},
     body: JSON.stringify({ type:"setAdminPassword", password:newadmin.value })
   });
-
-  alert("Admin password updated");
 }
 
-/* ---------------- LOGS ---------------- */
+/* LOGS (REAL-TIME) */
 async function loadLogs() {
   const res = await fetch(API + "/logs");
   const data = await res.json();
@@ -266,7 +222,7 @@ async function loadLogs() {
   logsBox.innerHTML = (data.logs || []).slice().reverse().map(l =>
     `<div>
       [${new Date(l.time).toLocaleTimeString()}]
-      ${l.role}: ${l.content}
+      <b>${l.role}</b>: ${l.content}
     </div>`
   ).join("");
 }
@@ -275,8 +231,8 @@ function startLogs() {
   loadLogs();
   setInterval(loadLogs, 2000);
 }
+/* updat */
 </script>
-
 
 
 </body>
