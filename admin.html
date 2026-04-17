@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Admin Panel</title>
+<title>Admin Dashboard</title>
 
 <style>
 body {
@@ -9,113 +9,201 @@ body {
   font-family:Arial;
   background:#0f172a;
   color:white;
+}
+
+/* CENTER LOGIN */
+#loginWrap {
   display:flex;
   justify-content:center;
   align-items:center;
   height:100vh;
 }
 
-.panel {
-  width:420px;
-  background:#111827;
-  padding:20px;
-  border-radius:16px;
+.card {
+  background:#1e293b;
+  padding:25px;
+  border-radius:14px;
+  width:320px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);
 }
 
-input,textarea,button {
+input, textarea {
   width:100%;
   margin:6px 0;
   padding:10px;
   border:none;
-  border-radius:10px;
+  border-radius:8px;
 }
 
 button {
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border:none;
+  border-radius:8px;
   background:#22c55e;
   color:white;
   cursor:pointer;
 }
 
-.danger {
-  background:#ef4444;
+button:hover {
+  opacity:0.9;
 }
 
-.logs {
-  background:#0b1220;
+/* DASHBOARD */
+#dashboard {
+  display:none;
+  height:100vh;
+  display:flex;
+}
+
+/* SIDEBAR */
+#sidebar {
+  width:220px;
+  background:#020617;
+  padding:15px;
+}
+
+.tab {
+  padding:10px;
+  margin-bottom:6px;
+  background:#1e293b;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.tab:hover {
+  background:#334155;
+}
+
+/* MAIN */
+#main {
+  flex:1;
+  padding:20px;
+}
+
+/* LOGS */
+#logsBox {
+  background:#020617;
   padding:10px;
   border-radius:10px;
-  max-height:200px;
+  height:300px;
   overflow-y:auto;
-  font-size:12px;
+  font-size:13px;
+}
+
+/* TITLE */
+h2 {
+  margin-top:0;
 }
 </style>
 </head>
 
 <body>
 
-<div class="panel">
-
-<div id="loginBox">
-  <h2>Admin Login</h2>
-  <input id="pass" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="card">
+    <h2>Admin Login</h2>
+    <input id="pass" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+  </div>
 </div>
 
-<div id="dash" style="display:none;">
+<!-- DASHBOARD -->
+<div id="dashboard">
 
-  <h2>Control Panel</h2>
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="tab" onclick="showTab('announce')">📢 Announce</div>
+    <div class="tab" onclick="showTab('control')">⚙️ Control</div>
+    <div class="tab" onclick="showTab('logs')">📊 Logs</div>
+  </div>
 
-  <textarea id="msg" placeholder="Announcement"></textarea>
-  <button onclick="broadcast()">📢 Broadcast</button>
+  <!-- MAIN -->
+  <div id="main">
 
-  <button class="danger" onclick="clearChat()">🧹 Clear Chat</button>
+    <!-- ANNOUNCE -->
+    <div id="announceTab">
+      <h2>Broadcast Message</h2>
+      <textarea id="msg" placeholder="Type announcement..."></textarea>
+      <button onclick="broadcast()">Send Announcement</button>
+    </div>
 
-  <input id="newpass" placeholder="User Password">
-  <button onclick="setPass()">Change User Password</button>
+    <!-- CONTROL -->
+    <div id="controlTab" style="display:none;">
+      <h2>Controls</h2>
 
-  <input id="newadmin" placeholder="Admin Password">
-  <button onclick="setAdmin()">Change Admin Password</button>
+      <button onclick="clearChat()">🧹 Clear Chat</button>
 
-  <h3>Logs</h3>
-  <button onclick="loadLogs()">Refresh Logs</button>
-  <div class="logs" id="logs"></div>
+      <h3>Change User Password</h3>
+      <input id="newpass" placeholder="New user password">
+      <button onclick="setPass()">Update</button>
 
-</div>
+      <h3>Change Admin Password</h3>
+      <input id="newadmin" placeholder="New admin password">
+      <button onclick="setAdmin()">Update</button>
+    </div>
 
+    <!-- LOGS -->
+    <div id="logsTab" style="display:none;">
+      <h2>Live Logs</h2>
+      <div id="logsBox"></div>
+    </div>
+
+  </div>
 </div>
 
 <script>
 const API = "https://backend.ryaana059.workers.dev/";
 
+let lastLogCount = 0;
+
 /* LOGIN */
 async function login(){
-  const res = await fetch(API+"adminLogin",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({password:pass.value})
-  });
+  try {
+    const res = await fetch(API + "/adminLogin", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({password:pass.value})
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if(data.success){
-    loginBox.style.display="none";
-    dash.style.display="block";
-    loadLogs();
-  } else {
-    alert("Wrong password");
+    if(data.success){
+      loginWrap.style.display="none";
+      dashboard.style.display="flex";
+      startLogs();
+    } else {
+      alert("Wrong password");
+    }
+
+  } catch {
+    alert("Server error");
   }
 }
 
-/* BROADCAST */
+/* TABS */
+function showTab(name){
+  announceTab.style.display = "none";
+  controlTab.style.display = "none";
+  logsTab.style.display = "none";
+
+  if(name === "announce") announceTab.style.display = "block";
+  if(name === "control") controlTab.style.display = "block";
+  if(name === "logs") logsTab.style.display = "block";
+}
+
+/* ACTIONS */
 async function broadcast(){
   await fetch(API,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({type:"broadcast",text:msg.value})
+    body:JSON.stringify({type:"broadcast", text:msg.value})
   });
+  msg.value = "";
 }
 
-/* CLEAR */
 async function clearChat(){
   await fetch(API,{
     method:"POST",
@@ -124,32 +212,46 @@ async function clearChat(){
   });
 }
 
-/* USER PASS */
 async function setPass(){
   await fetch(API,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({type:"setPassword",password:newpass.value})
+    body:JSON.stringify({type:"setPassword", password:newpass.value})
   });
 }
 
-/* ADMIN PASS */
 async function setAdmin(){
   await fetch(API,{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({type:"setAdminPassword",password:newadmin.value})
+    body:JSON.stringify({type:"setAdminPassword", password:newadmin.value})
   });
 }
 
-/* LOGS FIXED */
+/* 🔥 REAL-TIME LOGS */
 async function loadLogs(){
-  const res = await fetch(API+"logs");
-  const data = await res.json();
+  try {
+    const res = await fetch(API + "/logs");
+    const data = await res.json();
 
-  logs.innerHTML = data.logs.map(l =>
-    `<div>[${new Date(l.time).toLocaleTimeString()}] ${l.role}: ${l.content}</div>`
-  ).join("");
+    if(!data.logs) return;
+
+    logsBox.innerHTML = data.logs.slice().reverse().map(l => {
+      return `
+        <div style="padding:5px; border-bottom:1px solid #1e293b;">
+          <span style="color:#22c55e">[${new Date(l.time).toLocaleTimeString()}]</span>
+          <span style="color:#60a5fa">${l.role}</span>:
+          ${l.content}
+        </div>
+      `;
+    }).join("");
+
+  } catch {}
+}
+
+function startLogs(){
+  loadLogs();
+  setInterval(loadLogs, 2000);
 }
 </script>
 
