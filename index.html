@@ -2,139 +2,100 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Teams and Channels | General | Microsoft Teams</title>
-
-<link rel="icon" href="https://th.bing.com/th?q=Team%27s+Logo+White+Background&w=120&h=120&c=1&rs=1&qlt=70&o=7&dpr=2">
+<title>Teams and Channels</title>
 
 <style>
 body {
-  background: #0f172a;
-  font-family: Arial;
-  color: white;
   margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
   height: 100vh;
-  overflow: hidden;
 }
 
-/* LOGIN */
 #login {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  gap: 10px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  gap:10px;
 }
 
 #login input {
-  padding: 12px;
-  width: 240px;
-  border-radius: 10px;
-  border: none;
+  padding:12px;
+  width:240px;
+  border-radius:10px;
+  border:none;
 }
 
-/* CHAT */
 #chat {
-  display: none;
-  width: 100vw;
-  height: 100vh;
-  flex-direction: column;
-  background: #1e293b;
+  display:none;
+  flex-direction:column;
+  height:100vh;
+  width:100vw;
+  background:#1e293b;
 }
 
-/* HEADER */
 #header {
-  background: #020617;
-  padding: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background:#020617;
+  padding:10px;
 }
 
-/* MESSAGES */
 #messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: #020617;
+  flex:1;
+  overflow-y:auto;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background:#020617;
 }
 
 .message {
-  padding: 10px;
-  border-radius: 12px;
-  max-width: 75%;
-  word-wrap: break-word;
+  padding:10px;
+  border-radius:12px;
+  max-width:75%;
 }
 
-.user {
-  background: #3b82f6;
-  align-self: flex-end;
-}
+.user { background:#3b82f6; align-self:flex-end; }
+.ai { background:#334155; align-self:flex-start; }
 
-.ai {
-  background: #334155;
-  align-self: flex-start;
-}
-
-/* INPUT */
 #inputArea {
-  display: flex;
-  padding: 10px;
-  gap: 5px;
+  display:flex;
+  padding:10px;
+  gap:5px;
 }
 
 textarea {
-  flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  resize: none;
-  height: 40px;
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  resize:none;
+  height:40px;
 }
 
 button {
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: #22c55e;
-  color: white;
-  cursor: pointer;
-}
-
-/* ANNOUNCEMENT */
-#popup {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #0b1220;
-  border: 2px solid #22c55e;
-  padding: 16px 22px;
-  border-radius: 12px;
-  z-index: 9999;
-  display: none;
-  text-align: center;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#22c55e;
+  color:white;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div id="login">
   <h2>Enter Access</h2>
   <input type="password" id="password">
   <button onclick="login()">Enter</button>
 </div>
 
-<!-- CHAT -->
 <div id="chat">
-  <div id="header">
-    <span>AI Chat 💬</span>
-  </div>
+  <div id="header">AI Chat 💬</div>
 
   <div id="messages"></div>
 
@@ -144,31 +105,42 @@ button {
   </div>
 </div>
 
-<!-- POPUP -->
-<div id="popup"></div>
+<div id="popup" style="
+position:fixed;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+background:#0b1220;
+border:2px solid #22c55e;
+padding:14px;
+border-radius:12px;
+display:none;
+"></div>
 
 <script>
 const API = "https://backend.ryaana059.workers.dev";
 
-/* SAFE STATE */
 let messages, userInput;
 let lastClear = localStorage.getItem("lastClear") || "0";
 let lastBroadcastId = localStorage.getItem("lastBroadcastId") || null;
 
-/* INIT */
 window.addEventListener("DOMContentLoaded", () => {
   messages = document.getElementById("messages");
   userInput = document.getElementById("userInput");
-
-  if (!messages || !userInput) return;
-
-  setupEnter();
-  startSync();
 
   if (document.cookie.includes("chat_access=1")) {
     document.getElementById("login").style.display = "none";
     document.getElementById("chat").style.display = "flex";
   }
+
+  userInput.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  setInterval(sync, 3000);
 });
 
 /* LOGIN */
@@ -177,9 +149,9 @@ async function login() {
     const pass = document.getElementById("password").value;
 
     const res = await fetch(API + "/login", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ password: pass })
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({password:pass})
     });
 
     const data = await res.json();
@@ -188,29 +160,33 @@ async function login() {
       document.cookie = "chat_access=1";
       location.reload();
     } else {
-      alert("Wrong password");
+      window.location.href = "https://teams.cloud.microsoft";
     }
-
   } catch {
-    alert("Server error");
+    window.location.href = "https://teams.cloud.microsoft";
   }
 }
 
-/* SEND MESSAGE */
+/* SEND */
 async function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
 
   userInput.value = "";
 
+  if (text.toLowerCase() === "te") {
+    window.location.href = "https://teams.cloud.microsoft";
+    return;
+  }
+
   add("user", text);
 
   try {
     const res = await fetch(API, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        messages: [{ role: "user", content: text }]
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        messages:[{role:"user",content:text}]
       })
     });
 
@@ -223,65 +199,45 @@ async function sendMessage() {
   }
 }
 
-/* ADD MESSAGE */
-function add(type, text) {
-  const div = document.createElement("div");
-  div.className = "message " + type;
-  div.innerText = text;
-
+/* ADD */
+function add(type,text){
+  const div=document.createElement("div");
+  div.className="message "+type;
+  div.innerText=text;
   messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
+  messages.scrollTop=messages.scrollHeight;
 }
 
-/* ENTER KEY */
-function setupEnter() {
-  userInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+/* ANNOUNCEMENT */
+function popup(text){
+  const p=document.getElementById("popup");
+  p.innerText="SITE ADMIN: "+text;
+  p.style.display="block";
+  setTimeout(()=>p.style.display="none",4000);
+}
+
+/* SYNC */
+async function sync(){
+  try{
+    const res=await fetch(API+"/status");
+    const data=await res.json();
+
+    if(data.lastCleared && String(data.lastCleared)!==lastClear){
+      lastClear=String(data.lastCleared);
+      localStorage.setItem("lastClear",lastClear);
+      messages.innerHTML="";
     }
-  });
-}
 
-/* ANNOUNCEMENT POPUP */
-function showPopup(text) {
-  const popup = document.getElementById("popup");
-  popup.innerText = "SITE ADMIN: " + text;
-  popup.style.display = "block";
-
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 5000);
-}
-
-/* SYNC SYSTEM */
-async function startSync() {
-  setInterval(async () => {
-    try {
-      const res = await fetch(API + "/status");
-      const data = await res.json();
-
-      /* CLEAR */
-      if (data.lastCleared && String(data.lastCleared) !== lastClear) {
-        lastClear = String(data.lastCleared);
-        localStorage.setItem("lastClear", lastClear);
-        if (messages) messages.innerHTML = "";
+    if(data.broadcast?.id){
+      const id=String(data.broadcast.id);
+      if(id!==lastBroadcastId){
+        lastBroadcastId=id;
+        localStorage.setItem("lastBroadcastId",id);
+        popup(data.broadcast.text);
       }
+    }
 
-      /* BROADCAST (NO REPEAT ON REFRESH) */
-      if (data.broadcast?.id) {
-        const id = String(data.broadcast.id);
-
-        if (id !== lastBroadcastId) {
-          lastBroadcastId = id;
-          localStorage.setItem("lastBroadcastId", id);
-
-          showPopup(data.broadcast.text);
-        }
-      }
-
-    } catch {}
-  }, 3000);
+  }catch{}
 }
 </script>
 
