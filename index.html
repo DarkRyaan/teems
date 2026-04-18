@@ -228,9 +228,9 @@ async function sync(){
     // 🔐 session invalidation
     if (data.sessionVersion &&
         data.sessionVersion != localStorage.getItem("sessionVersion")) {
-      alert("Session expired");
+      
       document.cookie="";
-      location.reload();
+      
     }
 
     // 🧹 clear sync FIXED
