@@ -13,33 +13,10 @@ body {
   height: 100vh;
 }
 
-#login {
+#chat {
   display:flex;
   flex-direction:column;
-  justify-content:center;
-  align-items:center;
   height:100vh;
-  gap:10px;
-}
-
-#login input {
-  padding:12px;
-  width:240px;
-  border-radius:10px;
-  border:none;
-}
-
-#chat {
-  display:none;
-  flex-direction:column;
-  height:100vh;
-  width:100vw;
-  background:#1e293b;
-}
-
-#header {
-  background:#020617;
-  padding:10px;
 }
 
 #messages {
@@ -49,12 +26,11 @@ body {
   display:flex;
   flex-direction:column;
   gap:10px;
-  background:#020617;
 }
 
 .message {
   padding:10px;
-  border-radius:12px;
+  border-radius:10px;
   max-width:75%;
 }
 
@@ -73,7 +49,6 @@ textarea {
   border-radius:8px;
   border:none;
   resize:none;
-  height:40px;
 }
 
 button {
@@ -88,171 +63,90 @@ button {
 
 <body>
 
-<div id="login">
-  <h2>Enter Access</h2>
-  <input type="password" id="password">
-  <button onclick="login()">Enter</button>
-</div>
-
 <div id="chat">
-  <div id="header">AI Chat 💬</div>
-
   <div id="messages"></div>
 
   <div id="inputArea">
-    <textarea id="userInput" placeholder="Type here"></textarea>
+    <textarea id="userInput"></textarea>
     <button onclick="sendMessage()">Send</button>
   </div>
 </div>
 
-<div id="popup" style="
-position:fixed;
-top:20px;
-left:50%;
-transform:translateX(-50%);
-background:#0b1220;
-border:2px solid #22c55e;
-padding:14px;
-border-radius:12px;
-display:none;
-"></div>
-
-<!-- USER.html -->
 <script>
 const API = "https://backend.ryaana059.workers.dev";
 
-let messages, userInput;
-let lastClear = localStorage.getItem("lastClear") || "0";
-let lastBroadcastId = localStorage.getItem("lastBroadcastId") || null;
+let messages = document.getElementById("messages");
+let userInput = document.getElementById("userInput");
 
-window.addEventListener("DOMContentLoaded", () => {
-  messages = document.getElementById("messages");
-  userInput = document.getElementById("userInput");
+/* =========================
+   CHAT PERSISTENCE FIX
+========================= */
+let chatHistory = JSON.parse(localStorage.getItem("chat") || "[]");
 
-  if (document.cookie.includes("chat_access=1")) {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("chat").style.display = "flex";
-  }
+chatHistory.forEach(m => add(m.role, m.text, false));
 
-  userInput.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
+function add(type, text, save=true){
+  const div = document.createElement("div");
+  div.className = "message " + type;
+  div.innerText = text;
 
-  setInterval(sync, 3000);
-});
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
 
-/* LOGIN */
-async function login() {
-  try {
-    const pass = document.getElementById("password").value;
-
-    const res = await fetch(API + "/login", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({password:pass})
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      document.cookie = "chat_access=1";
-      localStorage.setItem("sessionVersion", data.sessionVersion);
-      location.reload();
-    } else {
-      window.location.href = "https://teams.cloud.microsoft";
-    }
-  } catch {
-    window.location.href = "https://teams.cloud.microsoft";
+  if (save) {
+    chatHistory.push({ role: type, text });
+    localStorage.setItem("chat", JSON.stringify(chatHistory));
   }
 }
 
-/* SEND */
+/* =========================
+   SEND MESSAGE
+========================= */
 async function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
 
   userInput.value = "";
 
-  if (text.toLowerCase() === "te") {
-    window.location.href = "https://teams.cloud.microsoft";
-    return;
-  }
-
   add("user", text);
 
+  const res = await fetch(API, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      messages:[{role:"user",content:text}]
+    })
+  });
+
+  const data = await res.json();
+
+  const reply = data?.choices?.[0]?.message?.content || "No response";
+
+  add("ai", reply);
+}
+
+/* =========================
+   SESSION VERSION CHECK (FIX LOGOUT)
+========================= */
+setInterval(async () => {
   try {
-    const res = await fetch(API, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        messages:[{role:"user",content:text}]
-      })
-    });
-
+    const res = await fetch(API + "/status");
     const data = await res.json();
-    const reply = data?.choices?.[0]?.message?.content || "No response";
 
-    add("ai", reply);
+    const localVersion = localStorage.getItem("sessionVersion");
 
-  } catch {
-    add("ai", "⚠️ Error");
-  }
-}
-
-/* ADD */
-function add(type,text){
-  const div=document.createElement("div");
-  div.className="message "+type;
-  div.innerText=text;
-  messages.appendChild(div);
-  messages.scrollTop=messages.scrollHeight;
-}
-
-/* ANNOUNCEMENT */
-function popup(text){
-  const p=document.getElementById("popup");
-  p.innerText="SITE ADMIN: "+text;
-  p.style.display="block";
-  setTimeout(()=>p.style.display="none",4000);
-}
-
-/* SYNC */
-async function sync(){
-  try{
-    const res=await fetch(API+"/status");
-    const data=await res.json();
-
-    // 🔐 session invalidation
     if (data.sessionVersion &&
-        data.sessionVersion != localStorage.getItem("sessionVersion")) {
-      
-      document.cookie="";
+        localVersion &&
+        data.sessionVersion != localVersion) {
+
+      localStorage.clear();
+      alert("Session changed — logged out");
       location.reload();
     }
 
-    // 🧹 clear sync FIXED
-    if (data.lastCleared && Number(data.lastCleared) !== Number(lastClear)) {
-      lastClear=String(data.lastCleared);
-      localStorage.setItem("lastClear",lastClear);
-      messages.innerHTML="";
-    }
-
-    // 📢 broadcast
-    if (data.broadcast && data.broadcast.text) {
-      const id=String(data.broadcast.id);
-      if(id!==lastBroadcastId){
-        lastBroadcastId=id;
-        localStorage.setItem("lastBroadcastId",id);
-        popup(data.broadcast.text);
-      }
-    }
-
-  }catch{}
-}
-/* yo */
+  } catch {}
+}, 4000);
 </script>
+
 </body>
 </html>
