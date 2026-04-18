@@ -219,6 +219,9 @@ setInterval(async () => {
       popup.style.borderRadius = "10px";
       popup.style.fontWeight = "bold";
       popup.style.marginTop = "10px";
+      popup.style.whiteSpace = "pre-line";
+      popup.style.textAlign = "center";
+      popup.innerText = "SITE ADMIN:\n" + data.broadcast.text;
 
       document.getElementById("popupContainer").innerHTML = "";
       document.getElementById("popupContainer").appendChild(popup);
