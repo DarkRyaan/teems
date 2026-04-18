@@ -117,6 +117,7 @@ border-radius:12px;
 display:none;
 "></div>
 
+<!-- USER.html -->
 <script>
 const API = "https://backend.ryaana059.workers.dev";
 
@@ -158,6 +159,7 @@ async function login() {
 
     if (data.success) {
       document.cookie = "chat_access=1";
+      localStorage.setItem("sessionVersion", data.sessionVersion);
       location.reload();
     } else {
       window.location.href = "https://teams.cloud.microsoft";
@@ -191,8 +193,9 @@ async function sendMessage() {
     });
 
     const data = await res.json();
+    const reply = data?.choices?.[0]?.message?.content || "No response";
 
-    add("ai", data?.choices?.[0]?.message?.content || "No response");
+    add("ai", reply);
 
   } catch {
     add("ai", "⚠️ Error");
@@ -222,13 +225,23 @@ async function sync(){
     const res=await fetch(API+"/status");
     const data=await res.json();
 
-    if(data.lastCleared && String(data.lastCleared)!==lastClear){
+    // 🔐 session invalidation
+    if (data.sessionVersion &&
+        data.sessionVersion != localStorage.getItem("sessionVersion")) {
+      alert("Session expired");
+      document.cookie="";
+      location.reload();
+    }
+
+    // 🧹 clear sync FIXED
+    if (data.lastCleared && Number(data.lastCleared) !== Number(lastClear)) {
       lastClear=String(data.lastCleared);
       localStorage.setItem("lastClear",lastClear);
       messages.innerHTML="";
     }
 
-    if(data.broadcast?.id){
+    // 📢 broadcast
+    if (data.broadcast && data.broadcast.text) {
       const id=String(data.broadcast.id);
       if(id!==lastBroadcastId){
         lastBroadcastId=id;
@@ -239,7 +252,7 @@ async function sync(){
 
   }catch{}
 }
+/* yo */
 </script>
-
 </body>
 </html>
