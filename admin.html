@@ -16,18 +16,19 @@ body {
 }
 
 .panel {
-  width:500px;
+  width:420px;
   background:#1e293b;
-  padding:20px;
-  border-radius:12px;
+  padding:15px;
+  border-radius:10px;
+  font-size:13px;
 }
 
 input,textarea,button {
   width:100%;
-  margin:5px 0;
-  padding:10px;
+  margin:4px 0;
+  padding:8px;
   border:none;
-  border-radius:8px;
+  border-radius:6px;
 }
 
 button {
@@ -38,24 +39,23 @@ button {
 
 #logs {
   background:#020617;
-  padding:10px;
-  border-radius:12px;
-  height:250px;
+  padding:8px;
+  border-radius:10px;
+  height:180px;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:6px;
 }
 
 .log {
-  padding:10px;
-  border-radius:12px;
+  padding:6px;
+  border-radius:6px;
+  font-size:12px;
 }
 
 .log.user { background:#3b82f6; }
 .log.admin { background:#22c55e; color:black; }
-
-h3 { margin-top:15px; }
 </style>
 </head>
 
@@ -63,13 +63,11 @@ h3 { margin-top:15px; }
 
 <div class="panel">
 
-<!-- LOGIN -->
 <div id="login">
   <input id="pass" type="password" placeholder="Admin Password">
   <button id="loginBtn">Login</button>
 </div>
 
-<!-- DASHBOARD -->
 <div id="dash" style="display:none;">
 
 <textarea id="msg" placeholder="Announcement"></textarea>
@@ -80,12 +78,12 @@ h3 { margin-top:15px; }
 <h3>Logs</h3>
 <div id="logs"></div>
 
-<h3>Change Passwords</h3>
+<h3>Passwords</h3>
 
-<input id="newUserPass" type="text" placeholder="New User Password">
+<input id="newUserPass" placeholder="New User Password">
 <button id="setUserPassBtn">Set User Password</button>
 
-<input id="newAdminPass" type="text" placeholder="New Admin Password">
+<input id="newAdminPass" placeholder="New Admin Password">
 <button id="setAdminPassBtn">Set Admin Password</button>
 
 </div>
@@ -95,7 +93,6 @@ h3 { margin-top:15px; }
 <script>
 const API = "https://backend.ryaana059.workers.dev";
 
-/* ELEMENT FIXES (YOU WERE MISSING THESE) */
 const loginDiv = document.getElementById("login");
 const dashDiv = document.getElementById("dash");
 
@@ -103,44 +100,26 @@ const passInput = document.getElementById("pass");
 const msgInput = document.getElementById("msg");
 const logsDiv = document.getElementById("logs");
 
-const loginBtn = document.getElementById("loginBtn");
-const broadcastBtn = document.getElementById("broadcastBtn");
-const clearBtn = document.getElementById("clearBtn");
-
-const newUserPass = document.getElementById("newUserPass");
-const newAdminPass = document.getElementById("newAdminPass");
-const setUserPassBtn = document.getElementById("setUserPassBtn");
-const setAdminPassBtn = document.getElementById("setAdminPassBtn");
-
-/* LOGIN (FIXED VARIABLE BUG) */
 loginBtn.onclick = async () => {
-  try {
-    const res = await fetch(API + "/adminLogin", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ password: passInput.value })
-    });
+  const res = await fetch(API + "/adminLogin", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ password: passInput.value })
+  });
 
-    const data = await res.json();
+  const data = await res.json();
 
-    if (data.success) {
-      loginDiv.style.display = "none";
-      dashDiv.style.display = "block";
-
-      loadLogs();
-      setInterval(loadLogs, 3000);
-    } else {
-      alert("Wrong password");
-    }
-  } catch {
-    alert("Login failed (server error)");
+  if (data.success) {
+    loginDiv.style.display = "none";
+    dashDiv.style.display = "block";
+    loadLogs();
+    setInterval(loadLogs, 3000);
+  } else {
+    alert("Wrong password");
   }
 };
 
-/* BROADCAST */
 broadcastBtn.onclick = async () => {
-  if (!msgInput.value.trim()) return;
-
   await fetch(API, {
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -154,10 +133,7 @@ broadcastBtn.onclick = async () => {
   msgInput.value="";
 };
 
-/* CLEAR */
 clearBtn.onclick = async () => {
-  if (!confirm("Clear all chat?")) return;
-
   await fetch(API, {
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -168,10 +144,7 @@ clearBtn.onclick = async () => {
   });
 };
 
-/* USER PASSWORD */
 setUserPassBtn.onclick = async () => {
-  if (!newUserPass.value.trim()) return;
-
   await fetch(API, {
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -181,14 +154,9 @@ setUserPassBtn.onclick = async () => {
       password:newUserPass.value
     })
   });
-
-  newUserPass.value = "";
 };
 
-/* ADMIN PASSWORD */
 setAdminPassBtn.onclick = async () => {
-  if (!newAdminPass.value.trim()) return;
-
   await fetch(API, {
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -198,28 +166,20 @@ setAdminPassBtn.onclick = async () => {
       password:newAdminPass.value
     })
   });
-
-  newAdminPass.value = "";
 };
 
-/* LOGS */
 async function loadLogs() {
-  try {
-    const res = await fetch(API + "/logs");
-    const data = await res.json();
+  const res = await fetch(API + "/logs");
+  const data = await res.json();
 
-    logsDiv.innerHTML = "";
+  logsDiv.innerHTML = "";
 
-    (data.logs || []).slice().reverse().forEach(l => {
-      const div = document.createElement("div");
-      div.className = "log " + (l.role || "user");
-      div.textContent = `${(l.role || "user").toUpperCase()}: ${l.content || ""}`;
-      logsDiv.appendChild(div);
-    });
-
-  } catch {
-    logsDiv.innerHTML = "<div>Failed to load logs</div>";
-  }
+  (data.logs || []).slice().reverse().forEach(l => {
+    const div = document.createElement("div");
+    div.className = "log " + (l.role || "user");
+    div.innerText = `${l.role.toUpperCase()}: ${l.content}`;
+    logsDiv.appendChild(div);
+  });
 }
 </script>
 
