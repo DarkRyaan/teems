@@ -43,11 +43,6 @@ button { background:#22c55e; color:white; cursor:pointer; }
   gap:10px;
 }
 
-.log {
-  padding:10px;
-  border-radius:12px;
-}
-
 .log.user { background:#3b82f6; }
 .log.broadcast { background:#22c55e; color:black; }
 
@@ -74,6 +69,14 @@ h3 { margin-top:15px; }
 <h3>Logs</h3>
 <div id="logs"></div>
 
+<h3>Change Passwords</h3>
+
+<input id="newUserPass" placeholder="New User Password">
+<button id="setUserPassBtn">Update User Password</button>
+
+<input id="newAdminPass" placeholder="New Admin Password">
+<button id="setAdminPassBtn">Update Admin Password</button>
+
 </div>
 
 </div>
@@ -88,7 +91,6 @@ const dash = document.getElementById("dash");
 const loginDiv = document.getElementById("login");
 
 const logsDiv = document.getElementById("logs");
-const msgInput = document.getElementById("msg");
 
 /* LOGIN */
 loginBtn.onclick = async () => {
@@ -118,11 +120,9 @@ document.getElementById("broadcastBtn").onclick = async () => {
     body:JSON.stringify({
       admin:true,
       type:"broadcast",
-      text:msgInput.value
+      text:document.getElementById("msg").value
     })
   });
-
-  msgInput.value = "";
 };
 
 /* CLEAR */
@@ -137,6 +137,31 @@ document.getElementById("clearBtn").onclick = async () => {
   });
 };
 
+/* PASSWORDS */
+document.getElementById("setUserPassBtn").onclick = async () => {
+  await fetch(API, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      admin:true,
+      type:"setPassword",
+      password:document.getElementById("newUserPass").value
+    })
+  });
+};
+
+document.getElementById("setAdminPassBtn").onclick = async () => {
+  await fetch(API, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      admin:true,
+      type:"setAdminPassword",
+      password:document.getElementById("newAdminPass").value
+    })
+  });
+};
+
 /* LOGS */
 async function loadLogs() {
   const res = await fetch(API + "/logs");
@@ -147,7 +172,7 @@ async function loadLogs() {
   (data.logs || []).reverse().forEach(l => {
     const div = document.createElement("div");
     div.className = "log " + (l.role || "user");
-    div.textContent = `${l.role.toUpperCase()}: ${l.content}`;
+    div.innerText = `${l.role.toUpperCase()}: ${l.content}`;
     logsDiv.appendChild(div);
   });
 }
