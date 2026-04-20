@@ -13,40 +13,76 @@ body {
   justify-content:center;
   align-items:center;
   height:100vh;
+  font-size:14px;
 }
 
 .panel {
-  width:500px;
+  width:380px;
   background:#1e293b;
-  padding:20px;
-  border-radius:12px;
+  padding:15px;
+  border-radius:10px;
 }
 
-input,textarea,button {
+/* INPUTS */
+input, textarea, button {
   width:100%;
-  margin:5px 0;
-  padding:10px;
+  margin:4px 0;
+  padding:8px;
   border:none;
-  border-radius:8px;
+  border-radius:6px;
+  font-size:13px;
 }
 
-button { background:#22c55e; color:white; cursor:pointer; }
+textarea {
+  resize:none;
+  height:60px;
+}
 
+button {
+  background:#22c55e;
+  color:white;
+  cursor:pointer;
+}
+
+/* HEADINGS */
+h3 {
+  margin-top:10px;
+  font-size:14px;
+}
+
+/* LOGS CONTAINER */
 #logs {
   background:#020617;
-  padding:10px;
-  border-radius:12px;
-  height:250px;
+  padding:8px;
+  border-radius:10px;
+  height:200px;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:6px;
 }
 
-.log.user { background:#3b82f6; }
-.log.broadcast { background:#22c55e; color:black; }
+/* LOG MESSAGE BASE */
+.log {
+  padding:8px 10px;
+  border-radius:12px;
+  font-size:13px;
+  max-width:80%;
+  word-wrap:break-word;
+}
 
-h3 { margin-top:15px; }
+/* USER MESSAGE (LEFT) */
+.log.user {
+  background:#3b82f6;
+  align-self:flex-start;
+}
+
+/* BROADCAST (RIGHT LIKE ADMIN) */
+.log.broadcast {
+  background:#22c55e;
+  color:black;
+  align-self:flex-end;
+}
 </style>
 </head>
 
@@ -171,8 +207,12 @@ async function loadLogs() {
 
   (data.logs || []).reverse().forEach(l => {
     const div = document.createElement("div");
-    div.className = "log " + (l.role || "user");
-    div.innerText = `${l.role.toUpperCase()}: ${l.content}`;
+
+    const role = l.role || "user";
+    div.className = "log " + role;
+
+    div.innerText = `${role.toUpperCase()}: ${l.content}`;
+
     logsDiv.appendChild(div);
   });
 }
