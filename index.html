@@ -259,13 +259,16 @@ setInterval(async () => {
     const res = await fetch(API + "/status");
     const data = await res.json();
 
-    if (!data.broadcast || !data.sessionVersion) return;
+    if (!data.broadcast || data.broadcast.version == null) return;
 
-    const lastSeen = localStorage.getItem("seenSessionVersion");
+    const lastSeen = localStorage.getItem("lastBroadcastVersion");
 
-    if (data.sessionVersion === lastSeen) return;
+    if (String(data.broadcast.version) === lastSeen) return;
 
-    localStorage.setItem("seenSessionVersion", data.sessionVersion);
+    localStorage.setItem(
+      "lastBroadcastVersion",
+      String(data.broadcast.version)
+    );
 
     const popup = document.createElement("div");
     popup.className = "popup";
@@ -275,29 +278,9 @@ setInterval(async () => {
       <div class="popup-text">${data.broadcast.text}</div>
     `;
 
-    const container = document.getElementById("popupContainer");
-    container.appendChild(popup);
+    document.getElementById("popupContainer").appendChild(popup);
 
-    setTimeout(() => {
-      popup.remove();
-    }, 4000);
-
-  } catch {}
-}, 2000);
-
-/* CLEAR CHAT SYNC */
-setInterval(async () => {
-  try {
-    const res = await fetch(API + "/status");
-    const data = await res.json();
-
-    const lastClear = localStorage.getItem("lastClear");
-
-    if (data.lastCleared && data.lastCleared !== lastClear) {
-      localStorage.setItem("lastClear", data.lastCleared);
-      localStorage.removeItem("chat");
-      messages.innerHTML = "";
-    }
+    setTimeout(() => popup.remove(), 4000);
 
   } catch {}
 }, 3000);
