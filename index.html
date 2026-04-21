@@ -16,6 +16,7 @@ body {
   height: 100vh;
 }
 
+/* LOGIN */
 #login {
   display:flex;
   flex-direction:column;
@@ -32,6 +33,7 @@ body {
   border:none;
 }
 
+/* CHAT */
 #chat {
   display:none;
   flex-direction:column;
@@ -84,15 +86,69 @@ button {
   border-radius:8px;
   background:#22c55e;
   color:white;
+  cursor:pointer;
 }
 
-/* broadcast popup container */
+/* POPUP CONTAINER */
 #popupContainer {
   position: fixed;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  align-items:center;
+}
+
+/* POPUP BOX */
+.popup {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: black;
+  padding: 14px 18px;
+  border-radius: 14px;
+  min-width: 260px;
+  max-width: 320px;
+  text-align: center;
+  font-weight: 500;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+
+  animation: slideDown 0.35s ease, fadeOut 0.5s ease 3.5s forwards;
+}
+
+/* TITLE */
+.popup-title {
+  font-weight: bold;
+  font-size: 13px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+/* TEXT */
+.popup-text {
+  font-size: 14px;
+  white-space: pre-line;
+}
+
+/* ANIMATIONS */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
 }
 </style>
 </head>
@@ -137,7 +193,6 @@ function login() {
   .then(r => r.json())
   .then(data => {
     if (data.success) {
-      localStorage.setItem("sessionVersion", data.sessionVersion);
       document.getElementById("login").style.display = "none";
       document.getElementById("chat").style.display = "flex";
     } else {
@@ -198,7 +253,7 @@ async function sendMessage() {
   render("ai", data?.choices?.[0]?.message?.content || "No response");
 }
 
-/* BROADCAST POPUP (USING sessionVersion) */
+/* BROADCAST POPUP USING sessionVersion */
 setInterval(async () => {
   try {
     const res = await fetch(API + "/status");
@@ -206,36 +261,30 @@ setInterval(async () => {
 
     if (!data.broadcast || !data.sessionVersion) return;
 
-    const lastSeenVersion = localStorage.getItem("seenSessionVersion");
+    const lastSeen = localStorage.getItem("seenSessionVersion");
 
-    // only show if NEW version
-    if (data.sessionVersion === lastSeenVersion) return;
+    if (data.sessionVersion === lastSeen) return;
 
-    // save immediately (prevents duplicates)
     localStorage.setItem("seenSessionVersion", data.sessionVersion);
 
     const popup = document.createElement("div");
-    popup.innerText = "SITE ADMIN:\n" + data.broadcast.text;
+    popup.className = "popup";
 
-    popup.style.background = "#22c55e";
-    popup.style.color = "black";
-    popup.style.padding = "12px 16px";
-    popup.style.borderRadius = "10px";
-    popup.style.fontWeight = "bold";
-    popup.style.marginTop = "10px";
-    popup.style.whiteSpace = "pre-line";
-    popup.style.textAlign = "center";
+    popup.innerHTML = `
+      <div class="popup-title">📢 SITE ADMIN</div>
+      <div class="popup-text">${data.broadcast.text}</div>
+    `;
 
     const container = document.getElementById("popupContainer");
-    container.innerHTML = "";
     container.appendChild(popup);
 
     setTimeout(() => {
-      container.innerHTML = "";
+      popup.remove();
     }, 4000);
 
   } catch {}
 }, 2000);
+
 /* CLEAR CHAT SYNC */
 setInterval(async () => {
   try {
