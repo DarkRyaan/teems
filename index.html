@@ -198,42 +198,44 @@ async function sendMessage() {
   render("ai", data?.choices?.[0]?.message?.content || "No response");
 }
 
-/* BROADCAST POPUP */
+/* BROADCAST POPUP (USING sessionVersion) */
 setInterval(async () => {
   try {
     const res = await fetch(API + "/status");
     const data = await res.json();
 
-    const last = localStorage.getItem("lastBroadcastId");
+    if (!data.broadcast || !data.sessionVersion) return;
 
-    if (data.broadcast && data.broadcast.id !== last) {
+    const lastSeenVersion = localStorage.getItem("seenSessionVersion");
 
-      localStorage.setItem("lastBroadcastId", data.broadcast.id);
+    // only show if NEW version
+    if (data.sessionVersion === lastSeenVersion) return;
 
-      const popup = document.createElement("div");
-      popup.innerText = "📢 " + data.broadcast.text;
+    // save immediately (prevents duplicates)
+    localStorage.setItem("seenSessionVersion", data.sessionVersion);
 
-      popup.style.background = "#22c55e";
-      popup.style.color = "black";
-      popup.style.padding = "12px 16px";
-      popup.style.borderRadius = "10px";
-      popup.style.fontWeight = "bold";
-      popup.style.marginTop = "10px";
-      popup.style.whiteSpace = "pre-line";
-      popup.style.textAlign = "center";
-      popup.innerText = "SITE ADMIN:\n" + data.broadcast.text;
+    const popup = document.createElement("div");
+    popup.innerText = "SITE ADMIN:\n" + data.broadcast.text;
 
-      document.getElementById("popupContainer").innerHTML = "";
-      document.getElementById("popupContainer").appendChild(popup);
+    popup.style.background = "#22c55e";
+    popup.style.color = "black";
+    popup.style.padding = "12px 16px";
+    popup.style.borderRadius = "10px";
+    popup.style.fontWeight = "bold";
+    popup.style.marginTop = "10px";
+    popup.style.whiteSpace = "pre-line";
+    popup.style.textAlign = "center";
 
-      setTimeout(() => {
-        document.getElementById("popupContainer").innerHTML = "";
-      }, 4000);
-    }
+    const container = document.getElementById("popupContainer");
+    container.innerHTML = "";
+    container.appendChild(popup);
+
+    setTimeout(() => {
+      container.innerHTML = "";
+    }, 4000);
 
   } catch {}
 }, 2000);
-
 /* CLEAR CHAT SYNC */
 setInterval(async () => {
   try {
